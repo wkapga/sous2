@@ -49,9 +49,14 @@
  * window being "Relay Off Time"
  ********************************************************/
 
+
+
 #include <PID_v1.h>
 #include <LiquidCrystal.h>
 #include <math.h> 
+#include <stdlib.h>
+#include <Time.h>
+
 
 #define RelayPin 2
 
@@ -77,6 +82,11 @@ float Tn = 298.16; // Nenntemperatur in K
 float R25 = 2250; // Nennwiderstand in Ohm bei Nenntemperatur (aus Datenblatt) 
 
 int taster = 1023;
+char buf[8];
+int selmode = 1;
+
+int pressed =0;
+int lastpressed =0;
 
 
 int WindowSize = 5000;
@@ -87,10 +97,10 @@ void setup()
   // LCD Groese festlegen
   lcd.begin(16, 2);
   // LCD Helligkeit einstellen
-  analogWrite (10, 60);
+  analogWrite (10, 90);
   
   
-  
+  setTime(0,0,0,1,1,11); // Zeit ist 12 Uhr mittags am 1.1.2011
   
   windowStartTime = millis();
   
@@ -141,66 +151,109 @@ T = T-273.15; // Umrechnung von K in °C
   if(Output > now - windowStartTime) digitalWrite(RelayPin,HIGH);
   else digitalWrite(RelayPin,LOW);
 
- //taster einlesen
- taster = analogRead(0);
  
- int pressed = map(taster, 0, 1023, 8, 0);
+ 
+// lcd.clear();
 
- 
- lcd.clear();
+// Aktuelle Temp
  lcd.setCursor(0, 0);
- lcd.print(T);
+ dtostrf(T, 4, 1, buf);
+ lcd.print(buf);
+ //lcd.print(T);
+ //Sollwert
  lcd.print("|");
+ dtostrf(Setpoint, 4, 1, buf);
+ lcd.print(buf);
+ //Prozent PWM
+ lcd.print("|");
+ dtostrf(Output/WindowSize*100, 5, 1, buf);
+ lcd.print(buf);
+ lcd.print("%"); 
  
- lcd.print(Setpoint);
- 
+ // zweite zeile
  lcd.setCursor(0, 1);
- lcd.print(Output);
+ 
+ switch( selmode )
+ {
+ 
+ case 0:  // Wert aus NTC auslesen
+ dtostrf(sensorWert, 4, 0, buf);
+ lcd.print(buf);
 
- lcd.print("|");
- lcd.print(sensorWert);
+// lcd.print(sensorWert);
  
  lcd.print("|");
  lcd.print(pressed);
+ break;
+ 
+ case 1: // Zeit Seit start
+ 
+ lcd.print(day()-1);
+ lcd.print("d ");
+   if ( hour() < 10 ) lcd.print("0");
+ lcd.print(hour());
+ lcd.print(":");
+ if ( minute() < 10 ) lcd.print("0");
+ lcd.print(minute());
+ lcd.print(":");
+ if ( second() < 10 ) lcd.print("0");
+ lcd.print(second());
 
+ break;
+  
+ case 2:
+ lcd.print(Output);
+ lcd.print("       ");
 
+ break;
 
+ 
+ }
+ 
+ 
+ //taster einlesen
+ taster = analogRead(0);
+ 
+ 
+ pressed = map(taster, 0, 1023, 8, 0);
+ 
+ if ( pressed != lastpressed ) 
+ {
+ 
+ 
  switch( pressed )
  {
-  case  5: //left -2grad
+ case  5: //left 
   Setpoint = Setpoint -2;
   break;
-case  7: //up +0,1grad
+ case  7: //up 
   Setpoint = Setpoint +0.1;
   break;
-case  6: //down 
+ case  6: //down 
   Setpoint = Setpoint -0.1;
   break;
-case  8: //right
+ case  8: //right
   Setpoint = Setpoint +2;
   break;
-// select = case 3
-
+ case 3:  // select 
+   if (selmode == 2) {
+       selmode = 0;
+      }
+   else
+   {
+     selmode = selmode +1;
+    }
+ break;
  }
- delay(500);
+ 
+ lastpressed = pressed;
+ }
+ 
+ 
+ 
+  // delay(500);
  
 }
 
 
-
  
-/* 
- 
-
-// the loop routine runs over and over again forever:
-void loop() {
-  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);               // wait for a second
-  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
-  delay(200);               // wait for a second
-}
-
-*/
-
-
-
