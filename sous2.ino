@@ -1,6 +1,6 @@
 /*
   anschluss relais/optokoppler:
-  COM2 = 3 ("relaypin")
+  COM2 = 2 ("relaypin")
   vcc=3.3V
   GND=GND
   
@@ -53,7 +53,7 @@
 #include <LiquidCrystal.h>
 #include <math.h> 
 
-#define RelayPin 3
+#define RelayPin 2
 
 //PID: Define Variables we'll be connecting to
 double Setpoint, Input, Output;
