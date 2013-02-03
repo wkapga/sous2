@@ -6,9 +6,29 @@
   
   kontakt=diode an = kontakt mitte auf aussen(bei "2")
   
-  taster/teiler = 0
+  http://physicalcomputing.at/page/11
+  taster/teiler = analog 1
+  R 1k 5V auf a1
+  R_NTC GND auf a1
   
-  LCD = 4 bis 9 sowie 10
+  
+  LCD = d4 bis 9 sowie 10helligkeit
+  Taster = a0
+  
+  nix= 1023
+  select=722/721
+  left= 482/481
+  down=307/308
+  up= 131/132
+  right=0
+  
+  
+    
+  rausführen also
+  GND ("doppelt")
+  3.3V
+  d3 (relais)
+  a1
   
  */
  
@@ -45,7 +65,7 @@ PID myPID(&Input, &Output, &Setpoint,2,5,1, DIRECT);
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 // Parameter NTC-Sensor
-int SensorPin = 0; // Für den Senoreingang wird Analog 0 gewählt 
+int SensorPin = 1; // Für den Senoreingang wird Analog 0 gewählt 
 float sensorWert = 0; // Variable, die den Sensor Wert annimmt 
 float u1 =0; // Spannung u1 am Spannungsteiler 
 float u2 = 0; // Spannung u2 am Spannungsteiler 
@@ -56,7 +76,7 @@ float B = 3982; // Wert aus Datenblatt des Thermistors
 float Tn = 298.16; // Nenntemperatur in K 
 float R25 = 2250; // Nennwiderstand in Ohm bei Nenntemperatur (aus Datenblatt) 
 
-
+int taster = 1023;
 
 
 int WindowSize = 5000;
@@ -121,10 +141,49 @@ T = T-273.15; // Umrechnung von K in °C
   if(Output > now - windowStartTime) digitalWrite(RelayPin,HIGH);
   else digitalWrite(RelayPin,LOW);
 
+ //taster einlesen
+ taster = analogRead(0);
+ 
+ int pressed = map(taster, 0, 1023, 8, 0);
+
+ 
+ lcd.clear();
  lcd.setCursor(0, 0);
  lcd.print(T);
+ lcd.print("|");
+ 
  lcd.print(Setpoint);
+ 
+ lcd.setCursor(0, 1);
+ lcd.print(Output);
 
+ lcd.print("|");
+ lcd.print(sensorWert);
+ 
+ lcd.print("|");
+ lcd.print(pressed);
+
+
+
+ switch( pressed )
+ {
+  case  5: //left -2grad
+  Setpoint = Setpoint -2;
+  break;
+case  7: //up +0,1grad
+  Setpoint = Setpoint +0.1;
+  break;
+case  6: //down 
+  Setpoint = Setpoint -0.1;
+  break;
+case  8: //right
+  Setpoint = Setpoint +2;
+  break;
+// select = case 3
+
+ }
+ delay(500);
+ 
 }
 
 
