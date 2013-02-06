@@ -56,9 +56,11 @@
 #include <math.h> 
 #include <stdlib.h>
 #include <Time.h>
+#include <Bounce.h>
 
 
 #define RelayPin 2
+#define BUTTONS 0
 
 //PID: Define Variables we'll be connecting to
 double Setpoint, Input, Output;
@@ -68,6 +70,9 @@ PID myPID(&Input, &Output, &Setpoint,2,5,1, DIRECT);
 
 //LCD init
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+// Bouncer
+Bounce bouncer = Bounce( BUTTONS,50 ); 
 
 // Parameter NTC-Sensor
 int SensorPin = 1; // Für den Senoreingang wird Analog 0 gewählt 
@@ -176,7 +181,7 @@ T = T-273.15; // Umrechnung von K in °C
  switch( selmode )
  {
  
- case 0:  // Wert aus NTC auslesen
+ case 0:  // Wert aus NTC auslesen, zum kalibrieren NTC
  dtostrf(sensorWert, 4, 0, buf);
  lcd.print(buf);
 
@@ -212,48 +217,45 @@ T = T-273.15; // Umrechnung von K in °C
  
  
  //taster einlesen
- taster = analogRead(0);
+ taster = analogRead(BUTTONS);
+ // bouncer 
+ bouncer.update ( );
  
  
  pressed = map(taster, 0, 1023, 8, 0);
  
- if ( pressed != lastpressed ) 
- {
+ 
+ Setpoint = Setpoint + (+0.10) * (selmode == 1) * (pressed ==7 ); //up
+ Setpoint = Setpoint + (-0.10) * (selmode == 1) * (pressed ==6 ); //down
+ Setpoint = Setpoint + (-0.01) * (selmode == 1) * (pressed ==5 ); //left
+ Setpoint = Setpoint + (+0.01) * (selmode == 1) * (pressed ==8 ); //right
  
  
- switch( pressed )
- {
- case  5: //left 
-  Setpoint = Setpoint -2;
-  break;
- case  7: //up 
-  Setpoint = Setpoint +0.1;
-  break;
- case  6: //down 
-  Setpoint = Setpoint -0.1;
-  break;
- case  8: //right
-  Setpoint = Setpoint +2;
-  break;
- case 3:  // select 
-   if (selmode == 2) {
-       selmode = 0;
+/* int bouncval = bouncer.read();
+  if (pressed == 3 && bouncval == 
+ 
+ 
+ 
+ /*  
+  if (pressed == 3 )
+  {
+   if ( pressed != lastpressed ) 
+     {     
+     if (selmode == 2) {
+         selmode = 0;
+         lastpressed = pressed;
+         }
+     else
+     {
+       selmode = selmode +1;
+       lastpressed = pressed;
       }
-   else
-   {
-     selmode = selmode +1;
-    }
- break;
- }
+     }
+   }
+ */
  
- lastpressed = pressed;
- }
- 
- 
- 
-  // delay(500);
  
 }
 
-
+// void chgonpress { int mode
  
