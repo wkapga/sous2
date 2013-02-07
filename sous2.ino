@@ -94,14 +94,14 @@ float R25 = 2250; // Nennwiderstand in Ohm bei Nenntemperatur (aus Datenblatt)
 int taster = 1023;
 char buf[8];
 
-const byte nrofmodes = 7;
-byte selmode = 6;
+const int nrofmodes = 7;
+int selmode = 1;
 
 int pressed =0;
 int lastpressed =0;
 
 
-int WindowSize = 5000;
+int WindowSize = 10*1000;
 unsigned long windowStartTime;
 
 void setup()
@@ -182,7 +182,7 @@ void loop()
  // bouncer 
  // bouncer.update ( );
  
-  pressed = map(taster, 0, 1023, 8, 0);
+ pressed = map(taster, 0, 1023, 8, 0);
   
  
  // zweite zeile
@@ -207,9 +207,10 @@ void loop()
  break;
  
  case 1: // Sollwert
+ lcd.print("Set:");
  dtostrf(Setpoint, 4, 1, buf);
  lcd.print(buf);
- // mode 1 Sollwert
+ lcd.print("       ");
  Setpoint = Setpoint + (+0.10)  * (pressed ==7 ); //up
  Setpoint = Setpoint + (-0.10)  * (pressed ==6 ); //down
  Setpoint = Setpoint + (-0.01)  * (pressed ==5 ); //left
@@ -218,6 +219,7 @@ void loop()
  break;
   
  case 2: //  Laenge des Fenster einstellen
+ lcd.print("Wi:");
  lcd.print(WindowSize);
  lcd.print("       ");
  WindowSize = WindowSize + (+10)  * (pressed ==7 ); //up
@@ -226,6 +228,7 @@ void loop()
  break;
 
  case 3: // P einstellen
+ lcd.print("P:");
  lcd.print(kP);
  lcd.print("       ");
  kP = kP + (+0.01)  * (pressed ==7 ); //up
@@ -233,6 +236,7 @@ void loop()
  break;
  
  case 4: // I einstellen
+ lcd.print("I:");
  lcd.print(kI);
  lcd.print("       ");
  kI = kI + (+0.01)  * (pressed ==7 ); //up
@@ -240,6 +244,7 @@ void loop()
  break;
 
  case 5: // D einstellen
+ lcd.print("D:");
  lcd.print(kD);
  lcd.print("       ");
  kD = kD + (+0.01)  * (pressed ==7 ); //up
@@ -273,11 +278,9 @@ void loop()
   
  
  if ( (pressed == 3) &&  (pressed != lastpressed) ) { //wenn "select" frisch gedrckt
- //  lastedebouncetime = millis();  // frisch reset
-   selmode = ++selmode % nrofmodes;
-   lastpressed = pressed;
+   selmode = ++selmode % nrofmodes ;
  }
- 
+ lastpressed = pressed;
 
  
 }
