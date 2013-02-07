@@ -21,16 +21,13 @@
   down=307/308
   up= 131/132
   right=0
-  
-  
-    
+   
   rausführen also
   GND ("doppelt")
   3.3V
   d3 (relais)
   a1
-  
- */
+  */
  
  
  /********************************************************
@@ -56,7 +53,7 @@
 #include <math.h> 
 #include <stdlib.h>
 #include <Time.h>
-#include <Bounce.h>
+// #include <Bounce.h>
 
 
 #define RelayPin 2
@@ -65,14 +62,22 @@
 //PID: Define Variables we'll be connecting to
 double Setpoint, Input, Output;
 
+float kP = 2;
+float kI = 5;
+float kD = 1;
+
+
 //Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint,2,5,1, DIRECT);
+PID myPID(&Input, &Output, &Setpoint,kP,kI,kD, DIRECT);
 
 //LCD init
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 // Bouncer
-Bounce bouncer = Bounce( BUTTONS,50 ); 
+// Bounce bouncer = Bounce( BUTTONS,50 ); 
+//long lastdebouncetime = 0;
+// long debouncedelay = 100;
+
 
 // Parameter NTC-Sensor
 int SensorPin = 1; // Für den Senoreingang wird Analog 0 gewählt 
@@ -88,7 +93,9 @@ float R25 = 2250; // Nennwiderstand in Ohm bei Nenntemperatur (aus Datenblatt)
 
 int taster = 1023;
 char buf[8];
-int selmode = 1;
+
+const byte nrofmodes = 7;
+byte selmode = 6;
 
 int pressed =0;
 int lastpressed =0;
@@ -131,23 +138,18 @@ void loop()
 
 
 // NTC lesen und Temp errechnen
-sensorWert = analogRead(SensorPin); // Wert am Sensor wird gelesen 
-u2 = (sensorWert * 5)/1024; // Spannung am Sensor wird berechnet 
-u1 = 5-u2; // Spannung am Vorwiderstand wird berechnet 
-i = u1/1000; // Strom wird berechnet 
-Rntc = u2/i; // Widerstand des Thermistors zum Zeitpunkt der Messung 
-T = (B*Tn)/(B+(log(Rntc/R25)*Tn)); // Berechnung der Temperatur 
-T = T-273.15; // Umrechnung von K in °C 
-  
-  
+  sensorWert = analogRead(SensorPin); // Wert am Sensor wird gelesen 
+  u2 = (sensorWert * 5)/1024; // Spannung am Sensor wird berechnet 
+  u1 = 5-u2; // Spannung am Vorwiderstand wird berechnet 
+  i = u1/1000; // Strom wird berechnet 
+  Rntc = u2/i; // Widerstand des Thermistors zum Zeitpunkt der Messung 
+  T = (B*Tn)/(B+(log(Rntc/R25)*Tn)); // Berechnung der Temperatur 
+  T = T-273.15; // Umrechnung von K in °C 
   
   Input = T;
-  
-  myPID.Compute();
 
-  /************************************************
-   * turn the output pin on/off based on pid output
-   ************************************************/
+// PID berechnen und Relais setzen  
+  myPID.Compute();
   unsigned long now = millis();
   if(now - windowStartTime>WindowSize)
   { //time to shift the Relay Window
@@ -156,8 +158,7 @@ T = T-273.15; // Umrechnung von K in °C
   if(Output > now - windowStartTime) digitalWrite(RelayPin,HIGH);
   else digitalWrite(RelayPin,LOW);
 
- 
- 
+// Darstellung Display
 // lcd.clear();
 
 // Aktuelle Temp
@@ -175,6 +176,15 @@ T = T-273.15; // Umrechnung von K in °C
  lcd.print(buf);
  lcd.print("%"); 
  
+ 
+ //taster einlesen
+ taster = analogRead(BUTTONS);
+ // bouncer 
+ // bouncer.update ( );
+ 
+  pressed = map(taster, 0, 1023, 8, 0);
+  
+ 
  // zweite zeile
  lcd.setCursor(0, 1);
  
@@ -184,14 +194,59 @@ T = T-273.15; // Umrechnung von K in °C
  case 0:  // Wert aus NTC auslesen, zum kalibrieren NTC
  dtostrf(sensorWert, 4, 0, buf);
  lcd.print(buf);
-
-// lcd.print(sensorWert);
- 
  lcd.print("|");
- lcd.print(pressed);
+ dtostrf(B, 5, 0, buf);
+ lcd.print(buf);
+/*  
+ lcd.print("|");
+ lcd.print(pressed); */
+ 
+ B = B + (+0.1)  * (pressed ==7 ); //up
+ B = B + (-0.1)  * (pressed ==6 ); //down
+ 
  break;
  
- case 1: // Zeit Seit start
+ case 1: // Sollwert
+ dtostrf(Setpoint, 4, 1, buf);
+ lcd.print(buf);
+ // mode 1 Sollwert
+ Setpoint = Setpoint + (+0.10)  * (pressed ==7 ); //up
+ Setpoint = Setpoint + (-0.10)  * (pressed ==6 ); //down
+ Setpoint = Setpoint + (-0.01)  * (pressed ==5 ); //left
+ Setpoint = Setpoint + (+0.01)  * (pressed ==8 ); //right
+ 
+ break;
+  
+ case 2: //  Laenge des Fenster einstellen
+ lcd.print(WindowSize);
+ lcd.print("       ");
+ WindowSize = WindowSize + (+10)  * (pressed ==7 ); //up
+ WindowSize = WindowSize + (-10)  * (pressed ==6 ); //down
+
+ break;
+
+ case 3: // P einstellen
+ lcd.print(kP);
+ lcd.print("       ");
+ kP = kP + (+0.01)  * (pressed ==7 ); //up
+ kP = kP + (-0.01)  * (pressed ==6 ); //down
+ break;
+ 
+ case 4: // I einstellen
+ lcd.print(kI);
+ lcd.print("       ");
+ kI = kI + (+0.01)  * (pressed ==7 ); //up
+ kI = kI + (-0.01)  * (pressed ==6 ); //down
+ break;
+
+ case 5: // D einstellen
+ lcd.print(kD);
+ lcd.print("       ");
+ kD = kD + (+0.01)  * (pressed ==7 ); //up
+ kD = kD + (-0.01)  * (pressed ==6 ); //down
+ break;
+
+ case 6: // Zeit einstellen/reseten
  
  lcd.print(day()-1);
  lcd.print("d ");
@@ -203,59 +258,29 @@ T = T-273.15; // Umrechnung von K in °C
  lcd.print(":");
  if ( second() < 10 ) lcd.print("0");
  lcd.print(second());
-
- break;
-  
- case 2:
- lcd.print(Output);
- lcd.print("       ");
-
+ 
+ if (pressed == 7) { // up = reset
+   setTime(0,0,0,1,1,11); // Zeit ist 12 Uhr mittags am 1.1.2011
+ }
  break;
 
  
  }
  
  
- //taster einlesen
- taster = analogRead(BUTTONS);
- // bouncer 
- bouncer.update ( );
+ myPID.SetTunings(kP,kI,kD); //eventuell kapseln?
  
+  
  
- pressed = map(taster, 0, 1023, 8, 0);
+ if ( (pressed == 3) &&  (pressed != lastpressed) ) { //wenn "select" frisch gedrckt
+ //  lastedebouncetime = millis();  // frisch reset
+   selmode = ++selmode % nrofmodes;
+   lastpressed = pressed;
+ }
  
- 
- Setpoint = Setpoint + (+0.10) * (selmode == 1) * (pressed ==7 ); //up
- Setpoint = Setpoint + (-0.10) * (selmode == 1) * (pressed ==6 ); //down
- Setpoint = Setpoint + (-0.01) * (selmode == 1) * (pressed ==5 ); //left
- Setpoint = Setpoint + (+0.01) * (selmode == 1) * (pressed ==8 ); //right
- 
- 
-/* int bouncval = bouncer.read();
-  if (pressed == 3 && bouncval == 
- 
- 
- 
- /*  
-  if (pressed == 3 )
-  {
-   if ( pressed != lastpressed ) 
-     {     
-     if (selmode == 2) {
-         selmode = 0;
-         lastpressed = pressed;
-         }
-     else
-     {
-       selmode = selmode +1;
-       lastpressed = pressed;
-      }
-     }
-   }
- */
- 
+
  
 }
 
-// void chgonpress { int mode
+
  
